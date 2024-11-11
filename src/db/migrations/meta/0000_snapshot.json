@@ -1,9 +1,78 @@
 {
-  "id": "fc54595b-c8fc-4540-8978-18a434bf2a90",
+  "id": "2e089ba0-3459-4cd6-b3d7-12bf42c1f20c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.binary_tree_path": {
+      "name": "binary_tree_path",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "max_leaf_to_node": {
+          "name": "max_leaf_to_node",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_node_to_node": {
+          "name": "max_node_to_node",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "binary_tree_path_userId_user_id_fk": {
+          "name": "binary_tree_path_userId_user_id_fk",
+          "tableFrom": "binary_tree_path",
+          "tableTo": "user",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
     "public.longest_substring": {
       "name": "longest_substring",
       "schema": "",

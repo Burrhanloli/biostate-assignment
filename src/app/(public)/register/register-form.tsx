@@ -52,7 +52,7 @@ export function RegisterForm({ defaultValues }: Props) {
       </form>
       <div className="flex items-center justify-end">
         <Button asChild variant="link">
-          <Link href="/login">Login</Link>
+          <Link prefetch href="/login">Login</Link>
         </Button>
       </div>
     </Form>

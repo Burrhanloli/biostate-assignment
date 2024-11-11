@@ -20,7 +20,7 @@
     - [Documentation](https://env.t3.gg/docs/nextjs)
 - Styles / UI
   - [tailwindcss](https://www.npmjs.com/package/tailwindcss)
-  - [@shadcn/ui](https://www.npmjs.com/package/@nextui-org/react)
+  - [@shadcn/ui](https://ui.shadcn.com/)
   - [next-themes](https://www.npmjs.com/package/next-themes)
 - Validation
   - [zod](https://www.npmjs.com/package/zod)
@@ -29,6 +29,7 @@
 - Database
   - [drizzle-orm](https://www.npmjs.com/package/drizzle-orm)
   - [postgres](https://www.npmjs.com/package/postgres)
+  - [supabase - PROD](https://supabase.com/)
   - [drizzle-kit](https://www.npmjs.com/package/drizzle-kit)
 - Authentication
   - [next-auth](https://www.npmjs.com/package/next-auth)
@@ -73,4 +74,17 @@ bun run db:seed
 
 ```sh
 bun run dev
+```
+
+8. Open the url:
+
+```sh
+http://localhost:3000
+```
+
+9. use seeded user to login, or register a new user
+
+```sh
+username: biostate.assignment@gmail.com
+password: biostate
 ```

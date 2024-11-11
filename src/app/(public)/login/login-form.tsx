@@ -48,7 +48,7 @@ export function LoginForm({ defaultValues }: Props) {
       </form>
       <div className="flex items-center justify-end">
         <Button asChild variant="link">
-          <Link href="/register">Register</Link>
+          <Link prefetch href="/register">Register</Link>
         </Button>
       </div>
     </Form>

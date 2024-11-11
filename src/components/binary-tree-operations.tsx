@@ -1,214 +1,380 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 
-import dagre from "@dagrejs/dagre";
-import { Plus } from "lucide-react";
-import { ToastContainer } from "react-toastify";
+import Dagre from "@dagrejs/dagre";
+import { CalculatorIcon, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { useSession } from "next-auth/react";
 import "react-toastify/dist/ReactToastify.css";
 import ReactFlow, {
   Background,
-  Connection,
   ConnectionLineType,
-  Controls,
   Edge,
-  Handle,
+  Controls as FlowControls,
   Node,
-  NodeToolbar,
   Panel,
-  Position,
   ReactFlowProvider,
-  addEdge,
   useEdgesState,
-  useNodeId,
   useNodesState,
+  useReactFlow,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
+import {
+  fetchHistory,
+  saveResult,
+} from "@/app/(protected)/binary-tree-path/actions";
+import TreeNode from "@/components/tree-node";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { BinaryTreePathSelectSchema } from "@/db/schema/binary-tree-path";
+import useTreeStore from "@/store/tree-store";
+import { toast } from "@/utils/toast";
 
-const initialNodes: Node[] = [];
-const initialEdges: Edge[] = [];
+import { Controls } from "./controls";
+import { Input } from "./ui/input";
+import { ScrollArea } from "./ui/scroll-area";
+import { Separator } from "./ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "./ui/sheet";
 
-const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
+const nodeTypes = {
+  treeNode: TreeNode,
+};
+const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
+  const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
+  g.setGraph({ rankdir: "TB" });
 
-const nodeWidth = 150;
-const nodeHeight = 40;
-
-export function BinaryTreeOperations() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getLayoutedElements = useCallback((nodes: any[], edges: any[]) => {
-    dagreGraph.setGraph({ rankdir: "TB" });
-    nodes.forEach((node) => {
-      dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
-    });
-
-    edges.forEach((edge) => {
-      dagreGraph.setEdge(edge.source, edge.target);
-    });
-
-    dagre.layout(dagreGraph);
-
-    const newNodes = nodes.map((node) => {
-      const nodeWithPosition = dagreGraph.node(node.id);
-      const newNode = {
-        ...node,
-        type: "node-with-toolbar",
-        targetPosition: "top",
-        sourcePosition: "bottom",
-        // We are shifting the dagre node position (anchor=center center) to the top left
-        // so it matches the React Flow node anchor point (top left).
-        position: {
-          x: nodeWithPosition.x - nodeWidth / 2,
-          y: nodeWithPosition.y - nodeHeight / 2,
-        },
-      };
-
-      return newNode;
-    });
-
-    return { nodes: newNodes, edges };
-  }, []);
-
-  const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(
-    () => getLayoutedElements(initialNodes, initialEdges),
-    [getLayoutedElements]
+  edges.forEach((edge) => g.setEdge(edge.source, edge.target));
+  nodes.forEach((node) =>
+    g.setNode(node.id, {
+      ...node,
+      width: 150,
+      height: 50,
+    })
   );
 
-  const NodeWithToolbar = ({ data }) => {
-    const nodeId = useNodeId();
+  Dagre.layout(g);
 
-    const onClick = () => {
-      const newNode: Node = {
-        type: "node-with-toolbar",
-        id: nodeIdCounter.current.toString(),
-        data: { label: `${Math.floor(Math.random() * 10)}` },
-        position: { x: Math.random() * 250, y: Math.random() * 250 },
-      };
+  return {
+    nodes: nodes.map((node) => {
+      const position = g.node(node.id);
+      // We are shifting the dagre node position (anchor=center center) to the top left
+      // so it matches the React Flow node anchor point (top left).
+      const x = position.x - 150 / 2;
+      const y = position.y - 50 / 2;
 
-      setNodes((nds) => nds.concat(newNode));
+      return { ...node, position: { x, y } };
+    }),
+    edges,
+  };
+};
 
-      setEdges((eds) =>
-        addEdge(
-          {
-            id: `e${Math.floor(Math.random() * 100 * Math.random())}`,
-            source: nodeId!,
-            target: newNode.id,
-            type: ConnectionLineType.SmoothStep,
-            animated: true,
-          },
-          eds
-        )
-      );
-      nodeIdCounter.current++;
+const LayoutView = () => {
+  const { data: session } = useSession({
+    required: true,
+  });
+  const [newValue, setNewValue] = useState<string>("");
+  const {
+    edges,
+    addNode,
+    deleteNode,
+    calculatePaths,
+    clearPaths,
+    nodes,
+    maxLeafToNodePath,
+    maxNodeToNodePath,
+    setSelectedNode,
+    selectedNode,
+  } = useTreeStore();
+  const { fitView } = useReactFlow();
+
+  const [reactFlowNodes, setReactFlowNodes, onNodesChange] = useNodesState([]);
+  const [reactFlowEdges, setReactFlowEdges, onEdgesChange] = useEdgesState([]);
+
+  const [historyData, setHistoryData] = useState<
+    BinaryTreePathSelectSchema[] | null
+  >(null);
+
+  const onSave = async () => {
+    const treeData = {
+      nodes: nodes,
+      edges: edges,
     };
 
-    return (
-      <>
-        <NodeToolbar isVisible position={Position.Right}>
-          <Button
-            onClick={onClick}
-            variant="outline"
-            size="sm"
-            className="m-0 p-1 px-2"
-          >
-            <Plus />
-          </Button>
-        </NodeToolbar>
-        <div className="react-flow__node-default">{data?.label}</div>
-        <Handle type="target" position={Position.Top} />
-        <Handle type="source" position={Position.Bottom} />
-      </>
-    );
+    if (!maxLeafToNodePath || !maxNodeToNodePath) {
+      return;
+    }
+
+    const response = await saveResult({
+      data: treeData,
+      maxLeafToNode: {
+        ...maxLeafToNodePath,
+        path: maxLeafToNodePath.path
+          .map((node) => nodes.find((rfNode) => rfNode.id === node))!
+          .map((rfNode) => rfNode?.data.value),
+      },
+      maxNodeToNode: {
+        ...maxNodeToNodePath,
+        path: maxNodeToNodePath.path
+          .map((node) => nodes.find((rfNode) => rfNode.id === node))!
+          .map((rfNode) => rfNode?.data.value),
+      },
+      userId: session!.user!.id!,
+    });
+    toast(response);
+    fetchHistory().then((value) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setHistoryData(value as any);
+    });
   };
 
-  const nodeTypes = useMemo(
-    () => ({
-      "node-with-toolbar": NodeWithToolbar,
-    }),
-    []
-  );
-  const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
+  useEffect(() => {
+    fetchHistory().then((value) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setHistoryData(value as any);
+    });
+  }, []);
 
-  const [rootNodeAdded, setRootNodeAdded] = useState(false);
-  const nodeIdCounter = useRef(1);
-
-  const onConnect = useCallback(
-    (params: Edge | Connection) =>
-      setEdges((eds) =>
-        addEdge(
-          { ...params, type: ConnectionLineType.SmoothStep, animated: true },
-          eds
-        )
-      ),
-    [setEdges]
-  );
-
-  const addNode = useCallback(() => {
-    const newNode: Node = {
-      type: "node-with-toolbar",
-      id: nodeIdCounter.current.toString(),
-      data: { label: `${Math.floor(Math.random() * 100)}` },
-      position: { x: Math.random() * 250, y: Math.random() * 250 },
-    };
-    setNodes((nds) => nds.concat(newNode));
-    nodeIdCounter.current++;
-    setRootNodeAdded(true);
-  }, [setNodes]);
+  // Sync Zustand store with React Flow state
+  useEffect(() => {
+    setReactFlowNodes(nodes);
+    setReactFlowEdges(edges);
+  }, [nodes, edges, setReactFlowNodes, setReactFlowEdges]);
 
   const onLayout = useCallback(() => {
-    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-      nodes,
-      edges
-    );
+    const layouted = getLayoutedElements(nodes, edges);
 
-    setNodes([...layoutedNodes]);
-    setEdges([...layoutedEdges]);
-  }, [getLayoutedElements, nodes, edges, setNodes, setEdges]);
+    setReactFlowNodes([...layouted.nodes]);
+    setReactFlowEdges([...layouted.edges]);
 
+    window.requestAnimationFrame(() => {
+      fitView();
+    });
+  }, [nodes, edges, setReactFlowNodes, setReactFlowEdges, fitView]);
+
+  useEffect(() => {
+    onLayout();
+    fitView();
+  }, [fitView, onLayout]);
+
+  const onNodeClick = useCallback(
+    (_: React.MouseEvent, node: Node) => {
+      setSelectedNode(node.id);
+    },
+    [setSelectedNode]
+  );
+
+  const onPaneClick = useCallback(() => {
+    fitView();
+  }, [fitView]);
+
+  const handleAddNode = () => {
+    const value = parseInt(newValue);
+    if (!isNaN(value)) {
+      addNode(value);
+      setNewValue("");
+    }
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter") {
+      handleAddNode();
+    }
+  };
   return (
-    <ReactFlowProvider>
+    <>
       <Card className="m-4">
         <CardHeader>
           <CardTitle>Binary Tree Operations</CardTitle>
           <CardDescription>Build and analyze binary trees</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex space-x-2">
-            {!rootNodeAdded && <Button onClick={addNode}>Add Root Node</Button>}
+          <div className="flex items-center space-x-2">
+            <Input
+              type="number"
+              value={newValue}
+              onChange={(e) => setNewValue(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Node value"
+            />
+            <Button onClick={handleAddNode} title="Add node">
+              Add
+              <Plus size={20} />
+            </Button>
           </div>
+          <div className="flex flex-wrap gap-4">
+            <Button
+              onClick={() => selectedNode && deleteNode(selectedNode)}
+              disabled={!selectedNode}
+              title="Delete selected node"
+              variant="destructive"
+            >
+              Delete
+              <Trash2 size={20} />
+            </Button>
+
+            <Button
+              onClick={calculatePaths}
+              variant="outline"
+              title="Calculate paths"
+              disabled={reactFlowNodes.length < 2}
+            >
+              Calculate path
+              <CalculatorIcon size={20} />
+            </Button>
+            <Button
+              onClick={clearPaths}
+              variant="outline"
+              title="Clear paths"
+              disabled={reactFlowNodes.length < 2}
+            >
+              Clear path
+              <RefreshCw size={20} />
+            </Button>
+            <Button
+              onClick={onSave}
+              disabled={!maxLeafToNodePath || !maxNodeToNodePath}
+            >
+              Save Result
+            </Button>
+            <div className="flex items-end justify-end">
+              <Sheet>
+                <SheetTrigger className="hover:text-accent-foregroundinline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-input bg-background px-4 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0">
+                  History
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>Previous operations</SheetTitle>
+                    <SheetDescription>
+                      View all your previour operations
+                    </SheetDescription>
+                  </SheetHeader>
+                  <Separator className="my-4" />
+                  <ScrollArea className="h-[calc(100dvh-120px)]">
+                    <div className="flex flex-col gap-2">
+                      {historyData?.map((value, index) => (
+                        <Card key={index}>
+                          <CardHeader>
+                            <Button asChild variant="link" size="sm">
+                              <Link
+                                prefetch
+                                href={`/binary-tree-path/${value.id}`}
+                              >
+                                View Operation
+                              </Link>
+                            </Button>
+                          </CardHeader>
+                          <CardContent>
+                            Max Leaf-to-Node sum was {value.maxLeafToNode.sum}
+                            <CardDescription>
+                              Path: {value.maxLeafToNode.path.join(" → ")}
+                            </CardDescription>
+                          </CardContent>
+                          <CardContent>
+                            Max Node-to-Node sum was {value.maxNodeToNode.sum}
+                            <CardDescription>
+                              Path: {value.maxNodeToNode.path.join(" → ")}
+                            </CardDescription>
+                          </CardContent>
+                          <CardFooter className="text-muted-foreground">
+                            {/* @ts-expect-error user.email is custom property */}
+                            {value.user.email}
+                          </CardFooter>
+                        </Card>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </SheetContent>
+              </Sheet>
+            </div>
+          </div>
+          {(maxLeafToNodePath || maxNodeToNodePath) && (
+            <div className="space-y-2 text-sm">
+              {maxLeafToNodePath && (
+                <div className="rounded bg-green-100 p-2 text-primary-foreground">
+                  <div className="font-semibold text-primary-foreground">
+                    Max Leaf-to-Node Path Sum:{" "}
+                    <strong className="text-2xl">
+                      {maxLeafToNodePath.sum}
+                    </strong>
+                  </div>
+                  <div className="mt-1 text-xl text-primary-foreground">
+                    Path:{" "}
+                    {maxLeafToNodePath.path
+                      .map((id) => {
+                        const node = nodes.find((n) => n.id === id);
+                        return node ? node.data.value : "";
+                      })
+                      .join(" → ")}
+                  </div>
+                </div>
+              )}
+              {maxNodeToNodePath && (
+                <div className="rounded bg-orange-100 p-2">
+                  <div className="font-semibold text-primary-foreground">
+                    Max Node-to-Node Path Sum:{" "}
+                    <strong className="text-2xl">
+                      {maxNodeToNodePath.sum}
+                    </strong>
+                  </div>
+                  <div className="mt-1 text-xl text-primary-foreground">
+                    Path:{" "}
+                    {maxNodeToNodePath.path
+                      .map((id) => {
+                        const node = nodes.find((n) => n.id === id);
+                        return node ? node.data.value : "";
+                      })
+                      .join(" → ")}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
-      <div className="h-[700px] border-2 bg-white">
+      <div className="m-4 h-[640px] border-2 bg-white">
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={reactFlowNodes}
+          edges={reactFlowEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
+          onNodeClick={onNodeClick}
+          onPaneClick={onPaneClick}
           fitView
           snapToGrid
           nodeTypes={nodeTypes}
           connectionLineType={ConnectionLineType.SmoothStep}
         >
-          <Panel position="top-right">
-            <Button variant="secondary" onClick={() => onLayout()}>
-              Arrange
-            </Button>
+          <Background />
+          <FlowControls />
+          <Panel position="top-left">
+            <Controls />
           </Panel>
-          <Background color="#ccc" />
-          <Controls />
         </ReactFlow>
       </div>
-      <ToastContainer position="bottom-right" />
+    </>
+  );
+};
+
+export function BinaryTreeOperationsNew() {
+  return (
+    <ReactFlowProvider>
+      <LayoutView />
     </ReactFlowProvider>
   );
 }

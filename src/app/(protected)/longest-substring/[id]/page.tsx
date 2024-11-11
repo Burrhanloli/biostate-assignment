@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
 
-import { Separator } from "@radix-ui/react-separator";
-
 import { CopyButton } from "@/components/copy-button";
 import {
   Card,
@@ -10,8 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { toast } from "@/utils/toast";
+import { Separator } from "@/components/ui/separator";
 import { getColorBasedOnLength } from "@/utils/color";
+import { toast } from "@/utils/toast";
 
 import { fetchResult } from "./actions";
 
@@ -36,16 +35,14 @@ export default async function Page({
       <CardHeader>
         <CardTitle>Result for {data.query}</CardTitle>
         <CardDescription>
-          <div className="flex flex-col items-start justify-start gap-4 py-2">
-            <strong className="text-lg font-bold">
-              Longest String is{" "}
-              <span className="text-2xl">{data.result.length}</span>
-            </strong>
-            <CopyButton value={data.result} color="green" />
-          </div>
+          Longest String is{" "}
+          <strong className="text-2xl">{data.result.length}</strong>
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="flex items-start justify-start gap-4">
+          <CopyButton value={data.result} color="green" />
+        </div>
         <Separator className="my-4" />
         <div className="flex flex-wrap gap-2">
           {data.data.map((value, index) => (
