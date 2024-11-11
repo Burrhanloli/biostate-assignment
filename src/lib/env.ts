@@ -15,7 +15,7 @@ export const env = createEnv({
     DB_PASSWORD: z.string(),
     DB_NAME: z.string(),
     DB_PORT: z.coerce.number(),
-    DATABASE_URL: z.string().url(),
+    DATABASE_URL: z.string().url().optional(),
     DB_MIGRATING: z
       .string()
       .refine((s) => s === "true" || s === "false")
