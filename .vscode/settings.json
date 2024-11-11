@@ -1,0 +1,18 @@
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "always",
+    "source.organizeImports": "always"
+  },
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "workbench.editor.customLabels.patterns": {
+    "**/app/**/page.tsx": "${dirname} - page",
+    "**/app/**/layout.tsx": "${dirname} - layout",
+    "**/app/**/loading.tsx": "${dirname} - loading",
+    "**/app/**/not-found.tsx": "${dirname} - not found",
+  },
+  "svg.preview.background": "transparent"
+}
