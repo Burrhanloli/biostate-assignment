@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 
 import * as schema from "./schema/index";
 
-export const client = postgres(env.DATABASE_URL, {
+export const client = postgres(env.DB_URL, {
   max: env.DB_MIGRATING ? 1 : undefined,
   prepare: false,
 });

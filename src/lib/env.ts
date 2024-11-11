@@ -15,7 +15,7 @@ export const env = createEnv({
     DB_PASSWORD: z.string(),
     DB_NAME: z.string(),
     DB_PORT: z.coerce.number(),
-    DATABASE_URL: z.string().url().optional(),
+    DB_URL: z.string().url(),
     DB_MIGRATING: z
       .string()
       .refine((s) => s === "true" || s === "false")
@@ -25,7 +25,8 @@ export const env = createEnv({
   onValidationError: (error: ZodError) => {
     console.error(
       "❌ Invalid environment variables:",
-      error.flatten().fieldErrors
+      error.flatten().fieldErrors,
+      error
     );
     process.exit(1);
   },
