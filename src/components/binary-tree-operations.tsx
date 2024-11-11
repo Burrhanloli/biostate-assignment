@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import Dagre from "@dagrejs/dagre";
-import { CalculatorIcon, Plus, RefreshCw, Trash2 } from "lucide-react";
+import {
+  CalculatorIcon,
+  MessageSquareWarning,
+  Plus,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
 import "react-toastify/dist/ReactToastify.css";
 import ReactFlow, {
@@ -40,6 +46,7 @@ import useTreeStore from "@/store/tree-store";
 import { toast } from "@/utils/toast";
 
 import { Controls } from "./controls";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { Separator } from "./ui/separator";
@@ -204,6 +211,15 @@ const LayoutView = () => {
           <CardDescription>Build and analyze binary trees</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Alert>
+            <MessageSquareWarning size={25} />
+            <AlertTitle>Heads up!</AlertTitle>
+            <AlertDescription>
+              To add a child node you need to select the parent node firt and
+              then enter the value in the input and click add button this will
+              create the child node.
+            </AlertDescription>
+          </Alert>
           <div className="flex items-center space-x-2">
             <Input
               type="number"
