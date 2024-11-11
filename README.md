@@ -88,3 +88,56 @@ http://localhost:3000
 username: biostate.assignment@gmail.com
 password: biostate
 ```
+
+## Alogorithms Used
+
+# Longest Substring Calculation
+
+It takes the moving window concept but utilises Maps for lightning-fast lookups. Interestingly, because a Map is a key-value pair, we’re able to use the letter as the key, and the position that it sits within the string as the value
+
+- Time Complexity: O(n)
+
+Each character in the string is processed exactly once, making the time complexity linear to the length of the string.
+
+- Space Complexity: O(min(m, n))
+
+The space complexity is primarily due to the charMap. In the worst case, the map can store information for all unique characters in the string. However, if the string has many repeated characters, the map's size will be smaller. Therefore, the space complexity is bounded by the minimum of the number of unique characters (m) and the length of the string (n).
+
+# All Substrings values Calculation
+
+The algorithm iterates through the string, building substrings one character at a time. It keeps track of unique characters in a set. If a repeated character is found, the current substring is added to the result set and the process moves to the next starting character. Finally, the substrings are filtered by length and sorted.
+
+- Time Complexity: O(n^2)
+
+The worst-case time complexity of this algorithm is O(n^2), where n is the length of the query string. This occurs when all substrings are unique.
+
+- Space Complexity: O(n)
+
+The space complexity is O(n) due to the result Set and the charSet used for each substring.
+
+# DFS Search
+
+- Recursive Exploration:
+
+The algorithm initiates a recursive exploration of the tree, starting from the root node.
+For each node, it iterates over its children.
+For each child, it recursively calls itself, passing the child node as the new starting point.
+
+- Maximum Path Calculation:
+
+During the recursive calls, the algorithm calculates the maximum sum path from each leaf node to its parent node.
+It compares this sum with the current maximum sum and updates the maximum sum and path accordingly.
+
+- Backtracking and Sum Accumulation:
+
+As the recursion unwinds, the algorithm backtracks to the parent node.
+At each parent node, it adds its own value to the maximum sum of its children.
+This process continues until the root node is reached, where the final maximum sum path is determined.
+
+- Time Complexity: O(N)
+
+The time complexity is linear to the number of nodes in the tree (N). This is because each node is visited exactly once during the DFS traversal.
+
+- Space Complexity: O(H)
+
+The space complexity is determined by the maximum depth of the recursion stack, which is equivalent to the height (H) of the tree. In the worst case, for a skewed tree, the space complexity can be O(N).
